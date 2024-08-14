@@ -1,11 +1,31 @@
 import HeaderBox from '@/components/HeaderBox'
+import RecentTransaction from '@/components/RecentTransaction'
 import RightSideBar from '@/components/RightSideBar'
 import TotalBalanceBox from '@/components/TotalBalanceBox'
+import {  getAccount, getAccounts } from '@/lib/actions/bank.actions'
 import { getLoggedInUser } from '@/lib/actions/user.actions'
 import React from 'react'
 
-const Home = async () => {
+const Home = async ({searchParams : {id ,page}}:SearchParamProps) => {
+
+    const currentPage = Number (page as string) || 1
+
   const loggedIn = await getLoggedInUser();
+
+  const userName = `${loggedIn.firstName} ${loggedIn.lastName}` 
+
+  const accounts = await getAccounts({
+    userId : loggedIn.$id
+  })
+
+  if(!accounts) return
+
+
+  const appwriteItemId = (id as string) || accounts?.data[0]?.appwriteItemId
+
+  const account = await getAccount({appwriteItemId})
+
+
   return (
     <section className='home'>
       <div className='home-content'>
@@ -13,22 +33,27 @@ const Home = async () => {
             <HeaderBox 
             type='greeting'
             title='Welcome'
-            user={loggedIn?.name || 'Guest'}
+            user={userName || 'Guest'}
             subtext="Access and manage your account and transactions efficiently"
             />
             
             <TotalBalanceBox 
-            accounts={[]}
-            totalBanks={1}
-            totalCurrentBalance={1250.32}
+            accounts={accounts?.data}
+            totalBanks={accounts?.totalBanks}
+            totalCurrentBalance={accounts?.totalCurrentBalance}
             />
           </header>
-          RECENT TRasncation
+          <RecentTransaction 
+          accounts = {accounts?.data}
+          transactions = {accounts?.transcations}
+          appwriteItemId={appwriteItemId}
+          page = {currentPage}
+          />
       </div>
       <RightSideBar 
       user={loggedIn} 
-      transactions={[]}
-      banks={[{currentBalance:123.50},{currentBalance:1234.89}]}
+      transactions={accounts?.transactions}
+      banks={accounts?.data.slice(0,2)}
        />
     </section>
   )
